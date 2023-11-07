@@ -6,18 +6,20 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"text/template"
 
 	"example.com/lets-go/internal/models"
 	_ "github.com/go-sql-driver/mysql"
 )
 
-type application struct{
-	infoLog *log.Logger
-	errorLog *log.Logger
-	snippets *models.SnippetModel
+type application struct {
+	infoLog       *log.Logger
+	errorLog      *log.Logger
+	snippets      *models.SnippetModel
+	templateCache map[string]*template.Template
 }
 
-func main(){
+func main() {
 	addr := flag.String("addr", ":4000", "Port the server will run on")
 	dsn := flag.String("dsn", "web:gottogo@/snippetbox?parseTime=true", "MySQL data source name")
 
@@ -33,16 +35,22 @@ func main(){
 
 	defer db.Close()
 
+	templateCache, err := newTemplateCache()
+	if err != nil {
+		errorLog.Fatal(err)
+	}
+
 	app := &application{
-		errorLog: errorLog,
-		infoLog: infoLog,
-		snippets: &models.SnippetModel{DB: db},
+		errorLog:      errorLog,
+		infoLog:       infoLog,
+		snippets:      &models.SnippetModel{DB: db},
+		templateCache: templateCache,
 	}
 
 	srv := &http.Server{
-		Addr: *addr,
+		Addr:     *addr,
 		ErrorLog: errorLog,
-		Handler: app.routes(),
+		Handler:  app.routes(),
 	}
 
 	infoLog.Printf("Starting server on %s", *addr)
@@ -53,11 +61,10 @@ func main(){
 func openDB(dsn string) (*sql.DB, error) {
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-	return nil, err
-	} 
+		return nil, err
+	}
 	if err = db.Ping(); err != nil {
-	return nil, err
-	} 
+		return nil, err
+	}
 	return db, nil
 }
-
