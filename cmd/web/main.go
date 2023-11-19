@@ -4,10 +4,10 @@ import (
 	"crypto/tls"
 	"database/sql"
 	"flag"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
-	"text/template"
 	"time"
 
 	"example.com/lets-go/internal/models"

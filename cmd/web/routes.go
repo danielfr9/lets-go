@@ -3,21 +3,22 @@ package main
 import (
 	"net/http"
 
+	"example.com/lets-go/ui"
 	"github.com/julienschmidt/httprouter"
 	"github.com/justinas/alice"
 )
 
 func (app *application) routes() http.Handler {
 	router := httprouter.New()
-	fileServer := http.FileServer(http.Dir("./ui/static/"))
+	fileServer := http.FileServer(http.FS(ui.Files))
 
-	router.Handler(http.MethodGet, "/static/*filepath", http.StripPrefix("/static", fileServer))
+	router.Handler(http.MethodGet, "/static/*filepath", fileServer)
 
 	router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		app.notFound(w)
 	})
 
-	dynamic := alice.New(app.sessionManager.LoadAndSave, noSurf)
+	dynamic := alice.New(app.sessionManager.LoadAndSave, noSurf, app.authenticate)
 
 	router.Handler(http.MethodGet, "/", dynamic.ThenFunc(app.home))
 	router.Handler(http.MethodGet, "/snippet/view/:id", dynamic.ThenFunc(app.snippetView))
