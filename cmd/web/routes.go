@@ -18,6 +18,8 @@ func (app *application) routes() http.Handler {
 		app.notFound(w)
 	})
 
+	router.HandlerFunc(http.MethodGet, "/ping", ping)
+
 	dynamic := alice.New(app.sessionManager.LoadAndSave, noSurf, app.authenticate)
 
 	router.Handler(http.MethodGet, "/", dynamic.ThenFunc(app.home))
@@ -33,7 +35,7 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodPost, "/snippet/create", protected.ThenFunc(app.snippetCreatePost))
 	router.Handler(http.MethodPost, "/user/logout", protected.ThenFunc(app.userLogoutPost))
 
-	standard := alice.New(app.recoverPanic, app.logRequest, secureHeader)
+	standard := alice.New(app.recoverPanic, app.logRequest, secureHeaders)
 
 	return standard.Then(router)
 }
